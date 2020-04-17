@@ -820,7 +820,7 @@
 	if (src.nodamage)
 		return tally
 
-	if (src.getStatusDuration("staggered"))
+	if (src.getStatusDuration("staggered") || src.hasStatus("blocking"))
 		tally += 0.5
 		//sprint disable handled in input.dm process_move, so that stamina isn't used up when running is impossible
 
@@ -1129,6 +1129,10 @@
 	src.throw_mode_off()
 	if (usr.stat)
 		return
+#if ASS_JAM //no throwing while in timestop
+	if (paused)
+		return
+#endif
 
 	//MBC : removing this because it felt bad and it wasn't *too* exploitable. still does click delay on the end of a throw anyway.
 	//if (usr.next_click > world.time)
@@ -1139,17 +1143,9 @@
 	if (!item) return
 
 	if (istype(item, /obj/item/grab))
-		var/obj/item/grab/grab = item
-		var/mob/M = grab.affecting
-		if (istype(M))
-			if ((grab.state < 1 && !(M.getStatusDuration("paralysis") || M.getStatusDuration("weakened") || M.stat)) || !isturf(src.loc))
-				src.visible_message("<span style=\"color:red\">[M] stumbles a little!</span>")
-				u_equip(grab)
-				return
-			M.lastattacker = src
-			M.lastattackertime = world.time
-			u_equip(grab)
-			item = M
+		var/obj/item/grab/G = item
+		item = G.handle_throw(src, target)
+		if (!item) return
 
 	u_equip(item)
 
@@ -1224,9 +1220,22 @@
 						src.a_intent = INTENT_DISARM
 						.=..()
 						src.a_intent = INTENT_DISARM
-				else if (params["middle"])
+				/*else if (params["middle"])
 					params["middle"] = 0
 					params["left"] = 1 //hacky again :)
+					var/prev = src.a_intent
+					src.a_intent = INTENT_GRAB
+					.=..()
+					src.a_intent = prev
+					return*/
+				else
+					src.a_intent = INTENT_HARM
+					.=..()
+					src.a_intent = INTENT_DISARM
+				return
+			if (src.client.check_key(KEY_PULL))
+				if (params["left"] && ismob(target))
+					params["ctrl"] = 0 //hacky wows :)
 					var/prev = src.a_intent
 					src.a_intent = INTENT_GRAB
 					.=..()
@@ -1239,6 +1248,10 @@
 				return
 		else
 			if (src.client.check_key(KEY_THROW) || src.in_throw_mode)
+				for (var/obj/item/cloaking_device/I in src)
+					if (I.active)
+						I.deactivate(src)
+						src.visible_message("<span style=\"color:blue\"><b>[src]'s cloak is disrupted!</b></span>")
 				src.throw_item(target, params)
 				return
 
@@ -1248,9 +1261,18 @@
 	if (src.client)
 		if (src.client.experimental_intents)
 			if (src.client.check_key(KEY_THROW))
-				src.set_cursor('icons/cursors/combat.dmi')
+				if (src.equipped())
+					src.set_cursor('icons/cursors/combat.dmi')
+				else
+					src.set_cursor('icons/cursors/combat_barehand.dmi')
 				src.client.show_popup_menus = 0
 				src.a_intent = INTENT_DISARM
+				src.hud.update_intent()
+				return
+			else if (src.client.check_key(KEY_PULL))
+				src.set_cursor('icons/cursors/combat_grab.dmi')
+				src.client.show_popup_menus = 0
+				src.a_intent = INTENT_GRAB
 				src.hud.update_intent()
 				return
 			else if (src.client.show_popup_menus == 0)
@@ -1369,6 +1391,7 @@
 
 	actions.interrupt(src, INTERRUPT_ATTACKED)
 	M.lastattacked = src
+
 	attack_particle(M,src)
 
 	if (!ishuman(M) && !ismobcritter(M))
@@ -1473,6 +1496,10 @@
 		return 1
 	if (src.limbs && (src.hand ? !src.limbs.l_arm : !src.limbs.r_arm))
 		return 1
+#if ASS_JAM //no fucking with inventory in timestop
+	if (paused)
+		return 1
+#endif
 	/*if (src.limbs && (src.hand ? !src.limbs.l_arm:can_hold_items : !src.limbs.r_arm:can_hold_items)) // this was fucking stupid and broke item limbs, I mean really, how do you restrain someone whos arm is a goddamn CHAINSAW
 		return 1*/
 
@@ -3483,3 +3510,13 @@
 	if (abilityHolder)
 		abilityHolder.set_loc_callback(newloc)
 	..()
+
+/mob/living/carbon/human/get_id()
+	. = ..()
+	if(.)
+		return
+	if(istype(src.wear_id, /obj/item/card/id))
+		return src.wear_id
+	if(istype(src.wear_id, /obj/item/device/pda2))
+		var/obj/item/device/pda2/pda = src.wear_id
+		return pda.ID_card

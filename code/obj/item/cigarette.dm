@@ -5,13 +5,13 @@
 
 /obj/item/clothing/mask/cigarette
 	name = "cigarette"
-	icon = 'icons/obj/cigarettes.dmi'
+	icon = 'icons/obj/items/cigarettes.dmi'
 	wear_image_icon = 'icons/mob/mask.dmi'
 	icon_state = "cig"
 	uses_multiple_icon_states = 1
 	item_state = "cig"
 	force = 0
-	damtype = "brute"
+	hit_type = DAMAGE_BLUNT
 	throw_speed = 0.5
 	w_class = 1
 	var/on = 0
@@ -86,7 +86,7 @@
 	proc/light(var/mob/user as mob, var/message as text)
 		if (src.on == 0)
 			src.on = 1
-			src.damtype = "fire"
+			src.hit_type = DAMAGE_BURN
 			src.force = 3
 			src.icon_state = litstate
 			src.item_state = litstate
@@ -98,10 +98,12 @@
 			if (!(src in processing_items))
 				processing_items.Add(src) // we have a nice scheduler let's use that instead tia
 
+			hit_type = DAMAGE_BURN
+
 	proc/put_out(var/mob/user as mob, var/message as text)
 		if (src.on == 1)
 			src.on = -1
-			src.damtype = "brute"
+			src.hit_type = DAMAGE_BLUNT
 			src.force = 0
 			src.icon_state = buttstate
 			src.item_state = buttstate
@@ -113,6 +115,8 @@
 				var/mob/M = src.loc
 				M.set_clothing_icon_dirty()
 			processing_items.Remove(src)
+
+			hit_type = DAMAGE_BLUNT
 
 			playsound(get_turf(src), "sound/impact_sounds/burn_sizzle.ogg", 50, 1)
 
@@ -407,10 +411,10 @@
 //not a cigarette as it is not smokable on its own. comes pre-flavoured though.
 /obj/item/bluntwrap
 	name = "blunt wrap"
-	icon = 'icons/obj/cigarettes.dmi'
+	icon = 'icons/obj/items/cigarettes.dmi'
 	icon_state = "bluntwrap"
 	force = 0
-	damtype = "brute"
+	hit_type = DAMAGE_BLUNT
 	throw_speed = 0.5
 	w_class = 1
 	rand_pos = 1
@@ -480,7 +484,11 @@
 			if(prob(5))
 				src.reagents.add_reagent("triplemeth",5)
 
-
+#if ASS_JAM
+/obj/item/clothing/mask/cigarette/cigarillo/juicer/exploding // Wow! What an example!
+	buttdesc = "Ain't twice the 'Rillo it used to be."
+	exploding = 1
+#endif
 
 /obj/item/clothing/mask/cigarette/propuffs
 	desc = "Pro Puffs - a new taste thrill in every cigarette."
@@ -520,7 +528,7 @@
 /obj/item/cigpacket
 	name = "cigarette packet"
 	desc = "The most popular brand of Space Cigarettes, sponsors of the Space Olympics."
-	icon = 'icons/obj/cigarettes.dmi'
+	icon = 'icons/obj/items/cigarettes.dmi'
 	icon_state = "cigpacket"
 	uses_multiple_icon_states = 1
 	item_state = "cigpacket"
@@ -613,7 +621,7 @@
 /obj/item/cigbutt
 	name = "cigarette butt"
 	desc = "A manky old cigarette butt."
-	icon = 'icons/obj/cigarettes.dmi'
+	icon = 'icons/obj/items/cigarettes.dmi'
 	icon_state = "cigbutt"
 	w_class = 1
 	throwforce = 1
@@ -624,7 +632,7 @@
 /obj/item/cigarbox
 	name = "cigar box"
 	desc = "The not-so-prestigeous brand of Space Cigars."
-	icon = 'icons/obj/cigarettes.dmi'
+	icon = 'icons/obj/items/cigarettes.dmi'
 	icon_state = "cigarbox"
 	uses_multiple_icon_states = 1
 	item_state = "cigarbox"
@@ -687,7 +695,7 @@
 /obj/item/cigarbox/gold
 	name = "deluxe golden cigar box"
 	desc = "The most prestigeous brand of Space Cigars, made in Space Cuba."
-	icon = 'icons/obj/cigarettes.dmi'
+	icon = 'icons/obj/items/cigarettes.dmi'
 	icon_state = "cigarbox"
 	uses_multiple_icon_states = 1
 	item_state = "cigarbox"
@@ -772,7 +780,7 @@
 /obj/item/matchbook
 	name = "matchbook"
 	desc = "A little bit of heavy paper with some matches in it, and a little strip to light them on."
-	icon = 'icons/obj/cigarettes.dmi'
+	icon = 'icons/obj/items/cigarettes.dmi'
 	icon_state = "matchbook"
 	uses_multiple_icon_states = 1
 	w_class = 1
@@ -850,7 +858,7 @@
 /obj/item/match
 	name = "match"
 	desc = "A little stick of wood with phosphorus on the tip, for lighting fires, or making you very frustrated and not lighting fires. Either or."
-	icon = 'icons/obj/cigarettes.dmi'
+	icon = 'icons/obj/items/cigarettes.dmi'
 	icon_state = "match"
 	uses_multiple_icon_states = 1
 	w_class = 1
@@ -1046,7 +1054,7 @@
 /obj/item/device/light/zippo
 	name = "zippo lighter"
 	desc = "A pretty nice lighter."
-	icon = 'icons/obj/cigarettes.dmi'
+	icon = 'icons/obj/items/cigarettes.dmi'
 	icon_state = "zippo"
 	item_state = "zippo"
 	inhand_image_icon = 'icons/mob/inhand/hand_general.dmi'
